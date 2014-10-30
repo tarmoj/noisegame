@@ -247,14 +247,16 @@ instr record2 ; record resonantfiltered band from given cutoff frequency
 	;outs aout, aout
 	
 	andx line 0, p3, p3*sr
-	tablew   (aout+tab(andx,giBuffer))*0.9 ,andx,giBuffer ; TODO - the buffere gets softer with every recording. Rather add everything up and scale later
+	tablew   aout*0.3+tab(andx,giBuffer), andx,giBuffer ;(aout+tab(andx,giBuffer))*0.9 ,andx,giBuffer ; TODO - the buffere gets softer with every recording. Rather add everything up and scale later
 endin
 
 instr scheduleBufPlay ; p3 should be duration of the piece, say 6 minutes or so
 	chnset 1,"count"
-	krate line 1/30, p3, 1/60 ; slower and slower
+	;krate line 1/30, p3, 1/60 ; slower and slower
+	krate init 1/30
+	kdur line 8, p3, 20
 	ktrig metro krate, 0.01
-	schedkwhen ktrig, 0, 0, "play_buffer", 0, 0.25*1/krate
+	schedkwhen ktrig, 0, 0, "play_buffer", 0, kdur
 
 endin
 
@@ -263,20 +265,23 @@ instr play_buffer
 	turnoff2 "filter",0,1
 	iWindow ftgenonce 0,0, 1024, 9, 0.5, 1, 0		; half of a sine wave
 	
-	ktime line 0, p3, 0.1
+	;ktime line 0, p3, 0.1
 	; ktime = 1/(p3/$BUFLEN)
 	;ktime oscil 0.1, 1/3, -1
 	;ktime += 0.2 
-	aenv linen 1,0.1,p3,0.5
+	aenv linen 1,0.01,p3,0.05
 	gkLevel = $STARTLEVEL*(1-aenv*0.95)
+	; TODO : kasuta gkLevel ka siinse väljundi kontrollimiseks, sound_out taseme vähendamiseks sea uus muutuja
 	;asig temposcal 1/(p3/$BUFLEN) , 1, 1, giBuffer, 1
 	
-	ktimewarp init p3/$BUFLEN ;line 0, p3, 2.7	;length of "fox.wav"
+	;ktimewarp init p3/$BUFLEN ;
+	ktimewarp line 0, p3, $BUFLEN	
+	;length of "fox.wav"
 	kresample init 1		;do not change pitch
 	ibeg = 0			;start at beginning
 	iwsize = 4410			;window size in samples with
 	irandw = 882			;bandwidth of a random number generator
-	itimemode = 0			;1- ktimewarp is "time" pointer; 0 - scale
+	itimemode = 1			;1- ktimewarp is "time" pointer; 0 - scale
 	ioverlap = 15 ; või 2 või 5
 	
 	asig sndwarp aenv/4, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, iWindow, itimemode
@@ -310,6 +315,7 @@ endin
 <CsScore>
 </CsScore>
 </CsoundSynthesizer>
+
 
 
 
@@ -369,7 +375,7 @@ endin
   <image>/</image>
   <eventLine>i "filter" 0 4</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>level</objectName>
@@ -415,7 +421,7 @@ endin
   <stringvalue/>
   <text>Play buffer</text>
   <image>/</image>
-  <eventLine>i "play_buffer" 0 15</eventLine>
+  <eventLine>i "play_buffer" 0 8</eventLine>
   <latch>false</latch>
   <latched>true</latched>
  </bsbObject>
@@ -429,7 +435,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>385.000</label>
+  <label>163.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -458,7 +464,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <selected>false</selected>
+  <selected>true</selected>
   <label/>
   <pressedValue>1</pressedValue>
   <randomizable group="0">false</randomizable>
@@ -526,9 +532,9 @@ endin
   <stringvalue/>
   <text>Start playbuffers</text>
   <image>/</image>
-  <eventLine>i1 0 10</eventLine>
+  <eventLine>i "scheduleBufPlay"  0 300</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
 </bsbPanel>
 <bsbPresets>
