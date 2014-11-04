@@ -19,9 +19,26 @@ seed 0
 #define BASEFREQ #55#
 #define BUFLEN #0.3#
 
+opcode TableMax_i, i, ii ; returns maximum value of the table 
+	itable, iIgnoreSign xin ; if iIgnoreSign > 0, take absolute values ( from -0.75 and 0.5, max is 0.75 )
+	imax  tab_i 0, itable
+	imax = (iIgnoreSign > 0 ) ? abs(imax) : imax
+	index = 1	
+label:
+	ivalue tab_i index, itable
+	ivalue = (iIgnoreSign > 0 ) ? abs(ivalue) : ivalue
+	if (ivalue>imax) then
+		imax = ivalue
+	endif
+	loop_lt index, 1, ftlen(itable)-1, label
+	xout imax	
+endop 
+
+
 ; GLOBALS:
 
 gkLevel init $STARTLEVEL
+gkFilterPlaying init 0
 gaL init 0
 gaR init 0
 giMaxTesters init 10
@@ -172,7 +189,7 @@ instr filter
 	prints "FILTER"
 	index = 0
 	istartfreq = 0
-	until (index>= ftlen(giFreqStorage)-1 || istartfreq>0) do
+	until (index>= ftlen(giFreqStorage)-1 || istartfreq>0) do ; find first frequency not 0
 		istartfreq tab_i index, giFreqStorage
 		index += 1
 	od  
@@ -180,6 +197,7 @@ instr filter
 	if istartfreq==0 then ; no frequencies in the table - no sound playing
 		turnoff
 	endif
+	gkFilterPlaying = 1 ; set flag to sound_out to dim its level
 	kfreq init 0
 	kcutoff init istartfreq ; 0?
 	kindex  line 0,p3,ftlen(giFreqStorage)
@@ -195,7 +213,7 @@ instr filter
 	kcutoff port kcutoff,0.02, istartfreq	
 	ain = (gaL+gaR)/2
 	aenv linen 1,0.1,p3,0.5
-	gkLevel = $STARTLEVEL*(1-aenv*0.95) ; bad - bump in the beginning, if other filter is playing.
+	;gkLevel = $STARTLEVEL*(1-aenv*0.95) ; bad - bump in the beginning, if other filter is playing.
 	;outvalue "level", gkLevel
 	abp butterbp ain, kcutoff, kcutoff/16 ; bring it out
 	afiltered  rezzy abp, kcutoff, 100, 1
@@ -213,10 +231,15 @@ instr filter
 ;	endif
 	
 	kpan line 0,p3,1
-	aL, aR pan2 afiltered*8*aenv, kpan
+	aL, aR pan2 afiltered*22*aenv*gkLevel, kpan
 	if (kcutoff>0) then
 		outs aL, aR
 	endif
+	
+	if (release()==1) then ; unset flag for sound_out
+		gkFilterPlaying = 0
+	endif	
+	
 	
 	;schedule "filter", i(gkNexttime), random:i(4,8)
 	;print i(gkNexttime)
@@ -265,13 +288,13 @@ instr play_buffer
 	turnoff2 "filter",0,1
 	iWindow ftgenonce 0,0, 1024, 9, 0.5, 1, 0		; half of a sine wave
 	
-	;ktime line 0, p3, 0.1
-	; ktime = 1/(p3/$BUFLEN)
-	;ktime oscil 0.1, 1/3, -1
-	;ktime += 0.2 
-	aenv linen 1,0.01,p3,0.05
-	gkLevel = $STARTLEVEL*(1-aenv*0.95)
-	; TODO : kasuta gkLevel ka siinse väljundi kontrollimiseks, sound_out taseme vähendamiseks sea uus muutuja
+	imax TableMax_i giBuffer, 1
+	iscale = (imax==0) ? 1 :1/imax; to normalize the table, avoid division by 0
+	print imax, iscale
+	
+	aenv madsr 0.05,0.1, 0.6, 0.2 ;linen 1,0.01,p3,0.05
+	gkFilterPlaying = 1 ; set flag to sound_out to dim its level
+	
 	;asig temposcal 1/(p3/$BUFLEN) , 1, 1, giBuffer, 1
 	
 	;ktimewarp init p3/$BUFLEN ;
@@ -279,16 +302,21 @@ instr play_buffer
 	;length of "fox.wav"
 	kresample init 1		;do not change pitch
 	ibeg = 0			;start at beginning
-	iwsize = 4410			;window size in samples with
-	irandw = 882			;bandwidth of a random number generator
+	iwsize = sr/5 ; 44100			;window size in samples with
+	irandw = iwsize*0.2 ;882			;bandwidth of a random number generator
 	itimemode = 1			;1- ktimewarp is "time" pointer; 0 - scale
-	ioverlap = 15 ; või 2 või 5
+	ioverlap = 64 ; või 2 või 5
 	
-	asig sndwarp aenv/4, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, iWindow, itimemode
-	     outs asig, asig
+	asig sndwarp 0.2*iscale, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, iWindow, itimemode
 
+	aout = asig*gkLevel*aenv ; TODO: normalize out!
 	 
-	outs asig*aenv,asig*aenv	
+	outs aout,aout
+	
+	if (release()==1) then ; unset flag for sound_out
+		gkFilterPlaying = 0
+	endif	
+	
 endin
 
 alwayson "sound_out"
@@ -297,8 +325,10 @@ instr sound_out
 	;kindex phasor 1/180 ; full cycle in 3 minute
 	;gkNexttime tab kindex, iUpDown,1 ; there must be better way to do it - calculate the values in "filter" before recursion
 	
-	
-	outs gaL*gkLevel, gaR*gkLevel
+	kamp = (gkFilterPlaying==1) ? 0.1 :1
+	kamp port kamp, 0.01, 1
+	;outvalue "level", kamp
+	outs gaL*gkLevel*kamp, gaR*gkLevel*kamp
 	gaL = 0
 	gaR = 0
 	gaFiltered = 0
@@ -324,13 +354,16 @@ endin
 
 
 
+
+
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
  <x>0</x>
  <y>0</y>
  <width>355</width>
- <height>368</height>
+ <height>378</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
@@ -375,7 +408,7 @@ endin
   <image>/</image>
   <eventLine>i "filter" 0 4</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>level</objectName>
@@ -387,7 +420,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>0.307</label>
+  <label>1.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -435,7 +468,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>163.000</label>
+  <label>168.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -534,7 +567,7 @@ endin
   <image>/</image>
   <eventLine>i "scheduleBufPlay"  0 300</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
 </bsbPanel>
 <bsbPresets>
