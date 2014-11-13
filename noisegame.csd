@@ -34,6 +34,20 @@ label:
 	xout imax	
 endop 
 
+opcode NormalizeTable, 0, ii 
+	itable, ilimit xin ; ilimit - in dbfs (like -6)
+	imax TableMax_i itable, 1
+	ilimit ampdbfs ilimit
+	iscale = (imax==0) ? 1 : ilimit/imax ; check against div with 0
+	;print ilimit, iscale
+	index = 0
+label:
+	ivalue tab_i index, itable
+	;ivalue *= iscale
+	tabw_i ivalue*iscale, index, itable
+	loop_lt index, 1, ftlen(itable)-1, label
+endop
+
 
 ; GLOBALS:
 
@@ -49,10 +63,15 @@ giNoiseCounter init 1
 ;CHANNELS:
 chn_k "counter",2
 chn_k "count",1 ; if 1 count
+chn_k "level",1
+chn_k "filter",1
+chn_k "buffer",1
 
 ;TABLES:
 giFreqStorage ftgen 10,0,1024, 7, 0, 1024, 0 ; empty table to store here frequencies by the pan positions
 giBuffer ftgen 0,0,sr, 2,0
+giWindow ftgen 0,0, 1024, 9, 0.5, 1, 0		; half of a sine wave
+	
 
 
 ;schedule "start_tester", 0,0,giMaxTesters
@@ -99,6 +118,7 @@ instr tester
 endin
 
 
+
 ;schedule "noise_",0,7, 100,2000,  0.5,    0.01,   0.02, 1,     0.02, 0.2,   0.6,0.3,  0.2, 1,    1,0
 
 instr noise_ , 10
@@ -110,7 +130,7 @@ instr noise_ , 10
 
 	if (chnget:i("count")>0) then ; coun only when checkbox checked
 		giNoiseCounter += 1
-		if (active("play_buffer")<1)then ; store to buffer only when play_buffer is not playing, otherwise new sound may appear in the long sound
+		if (active("play_buffer")<1 && giNoiseCounter%5==0 ) then ; store to buffer only when play_buffer is not playing, otherwise new sound may appear in the long sound
 			schedule "record2",0,1, ifreqLower+iband/2 ; forward center frequency					
 		endif
 		
@@ -118,7 +138,7 @@ instr noise_ , 10
 	endif
 	chnset giNoiseCounter, "counter"
 	if (giNoiseCounter%giFilterStart==0) then
-		schedule "filter", 0, 4
+		schedule "filter", 0, 6
 	endif
 	; start playBuffer
 ;	if (giNoiseCounter%giBufferStart==0) then
@@ -181,8 +201,6 @@ gkNexttime init 20 ; first time the filter is called, the the interval is reduce
 ;schedule "filter", 0, 5
 ; start from button
 instr filter 
-	icheck active "play_buffer" 
-	print icheck
 	if (active:i("play_buffer")>0 || active:i("filter")>1) then ; work only when buffer playback is not active
 		turnoff
 	endif
@@ -212,7 +230,7 @@ instr filter
 	
 	kcutoff port kcutoff,0.02, istartfreq	
 	ain = (gaL+gaR)/2
-	aenv linen 1,0.1,p3,0.5
+	aenv adsr 0.1,0,1,0.2;linenr 1,0.1,0.2, 0.01
 	;gkLevel = $STARTLEVEL*(1-aenv*0.95) ; bad - bump in the beginning, if other filter is playing.
 	;outvalue "level", gkLevel
 	abp butterbp ain, kcutoff, kcutoff/16 ; bring it out
@@ -231,7 +249,8 @@ instr filter
 ;	endif
 	
 	kpan line 0,p3,1
-	aL, aR pan2 afiltered*22*aenv*gkLevel, kpan
+	kfilterLevel port chnget:k("filter"), 0.02
+	aL, aR pan2 afiltered*40*aenv*gkLevel*kfilterLevel, kpan ; TODO: port for filter
 	if (kcutoff>0) then
 		outs aL, aR
 	endif
@@ -247,13 +266,15 @@ endin
 
 instr record ; record and mix filtered sound to buffer
 	;setksmps 1
-	aenv linenr 0.5,0.01,0.01, 0.01 ; new singal somewhat softer
+	;aenv linenr 0.5,0.01,0.01, 0.01 ; new singal somewhat softer
+	aenv linen 0.5,random:i(0.1,0.45) *p3, p3, p3*random:i(0.1,0.45) 
 	asig = gaFiltered*aenv
 	;out asig
 	
 	;andx wrap a(timeinstk()), 0, ftlen(giBuffer)
 	andx line 0, p3, p3*sr
 	tablew   asig*0.1+tab(andx,giBuffer), andx,giBuffer ;(asig+tab(andx,giBuffer))*0.9 ,andx,giBuffer
+	; TODO: miks siin *0.1?
 	;gaFiltered = 0
 endin
 
@@ -270,7 +291,7 @@ instr record2 ; record resonantfiltered band from given cutoff frequency
 	;outs aout, aout
 	
 	andx line 0, p3, p3*sr
-	tablew   aout*0.3+tab(andx,giBuffer), andx,giBuffer ;(aout+tab(andx,giBuffer))*0.9 ,andx,giBuffer ; TODO - the buffere gets softer with every recording. Rather add everything up and scale later
+	tablew   aout+tab(andx,giBuffer), andx,giBuffer ;(aout+tab(andx,giBuffer))*0.9 ,andx,giBuffer ; TODO - the buffere gets softer with every recording. Rather add everything up and scale later
 endin
 
 instr scheduleBufPlay ; p3 should be duration of the piece, say 6 minutes or so
@@ -286,13 +307,12 @@ endin
 ;schedule "play_buffer",0,30
 instr play_buffer
 	turnoff2 "filter",0,1
-	iWindow ftgenonce 0,0, 1024, 9, 0.5, 1, 0		; half of a sine wave
+;	imax TableMax_i giBuffer, 1
+;	iscale = (imax==0) ? 1 :1/imax; to normalize the table, avoid division by 0
+;	print imax, iscale
+	NormalizeTable giBuffer, -3
 	
-	imax TableMax_i giBuffer, 1
-	iscale = (imax==0) ? 1 :1/imax; to normalize the table, avoid division by 0
-	print imax, iscale
-	
-	aenv madsr 0.05,0.1, 0.6, 0.2 ;linen 1,0.01,p3,0.05
+	aenv madsr 0.1,0.1, 0.6, 0.1 ;linen 1,0.01,p3,0.05
 	gkFilterPlaying = 1 ; set flag to sound_out to dim its level
 	
 	;asig temposcal 1/(p3/$BUFLEN) , 1, 1, giBuffer, 1
@@ -305,11 +325,12 @@ instr play_buffer
 	iwsize = sr/5 ; 44100			;window size in samples with
 	irandw = iwsize*0.2 ;882			;bandwidth of a random number generator
 	itimemode = 1			;1- ktimewarp is "time" pointer; 0 - scale
-	ioverlap = 64 ; või 2 või 5
+	ioverlap = 64 ; the bigger the better but more cpu
 	
-	asig sndwarp 0.2*iscale, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, iWindow, itimemode
-
-	aout = asig*gkLevel*aenv ; TODO: normalize out!
+	asig sndwarp 0.2, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, giWindow, itimemode
+	
+	kbufferLevel port chnget:k("buffer"), 0.02
+	aout = asig*gkLevel*aenv*kbufferLevel 
 	 
 	outs aout,aout
 	
@@ -324,6 +345,8 @@ instr sound_out
 	;iUpDown ftgenonce 0, 0, 512, -5, 20, 256, 8,256, 20 ; exponential curve for calling inst filter back
 	;kindex phasor 1/180 ; full cycle in 3 minute
 	;gkNexttime tab kindex, iUpDown,1 ; there must be better way to do it - calculate the values in "filter" before recursion
+	
+	gkLevel chnget "level"
 	
 	kamp = (gkFilterPlaying==1) ? 0.1 :1
 	kamp port kamp, 0.01, 1
@@ -357,12 +380,15 @@ endin
 
 
 
+
+
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
  <x>0</x>
  <y>0</y>
- <width>355</width>
+ <width>319</width>
  <height>378</height>
  <visible>true</visible>
  <uuid/>
@@ -371,26 +397,6 @@ endin
   <g>255</g>
   <b>255</b>
  </bgcolor>
- <bsbObject version="2" type="BSBGraph">
-  <objectName/>
-  <x>5</x>
-  <y>69</y>
-  <width>350</width>
-  <height>150</height>
-  <uuid>{6f54329b-ba8f-4579-b9c3-a2162d88da73}</uuid>
-  <visible>true</visible>
-  <midichan>0</midichan>
-  <midicc>0</midicc>
-  <value>0</value>
-  <objectName2/>
-  <zoomx>1.00000000</zoomx>
-  <zoomy>1.00000000</zoomy>
-  <dispx>1.00000000</dispx>
-  <dispy>1.00000000</dispy>
-  <modex>lin</modex>
-  <modey>lin</modey>
-  <all>true</all>
- </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button1</objectName>
   <x>74</x>
@@ -408,7 +414,7 @@ endin
   <image>/</image>
   <eventLine>i "filter" 0 4</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>level</objectName>
@@ -420,7 +426,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>1.000</label>
+  <label>0.490</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -454,7 +460,7 @@ endin
   <stringvalue/>
   <text>Play buffer</text>
   <image>/</image>
-  <eventLine>i "play_buffer" 0 8</eventLine>
+  <eventLine>i "play_buffer" 0 6</eventLine>
   <latch>false</latch>
   <latched>true</latched>
  </bsbObject>
@@ -468,7 +474,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>168.000</label>
+  <label>31.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -567,7 +573,148 @@ endin
   <image>/</image>
   <eventLine>i "scheduleBufPlay"  0 300</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
+ </bsbObject>
+ <bsbObject version="2" type="BSBVSlider">
+  <objectName>level</objectName>
+  <x>25</x>
+  <y>29</y>
+  <width>20</width>
+  <height>100</height>
+  <uuid>{35ff240e-de17-44f0-a5bd-37a223accafc}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <minimum>0.00000000</minimum>
+  <maximum>1.00000000</maximum>
+  <value>0.49000000</value>
+  <mode>lin</mode>
+  <mouseControl act="jump">continuous</mouseControl>
+  <resolution>-1.00000000</resolution>
+  <randomizable group="0">false</randomizable>
+ </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>5</x>
+  <y>138</y>
+  <width>62</width>
+  <height>26</height>
+  <uuid>{3fcc664d-942f-4d1f-9ba3-85c515ac46e6}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Main level</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBVSlider">
+  <objectName>filter</objectName>
+  <x>88</x>
+  <y>30</y>
+  <width>20</width>
+  <height>100</height>
+  <uuid>{20a7be8c-f770-41a6-b152-a6ce89d1d916}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <minimum>0.00000000</minimum>
+  <maximum>1.00000000</maximum>
+  <value>0.66000000</value>
+  <mode>lin</mode>
+  <mouseControl act="jump">continuous</mouseControl>
+  <resolution>-1.00000000</resolution>
+  <randomizable group="0">false</randomizable>
+ </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>75</x>
+  <y>138</y>
+  <width>64</width>
+  <height>27</height>
+  <uuid>{57511ba9-41e2-447a-bbd1-62e59cff0993}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Filter level</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBVSlider">
+  <objectName>buffer</objectName>
+  <x>152</x>
+  <y>30</y>
+  <width>20</width>
+  <height>100</height>
+  <uuid>{e5e30d9e-d000-4778-b98b-1e1583d02e07}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <minimum>0.00000000</minimum>
+  <maximum>1.00000000</maximum>
+  <value>0.76000000</value>
+  <mode>lin</mode>
+  <mouseControl act="jump">continuous</mouseControl>
+  <resolution>-1.00000000</resolution>
+  <randomizable group="0">false</randomizable>
+ </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>146</x>
+  <y>137</y>
+  <width>49</width>
+  <height>37</height>
+  <uuid>{b0e2850d-5344-4ef7-aaf0-4851529ceb51}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Buffer level</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
  </bsbObject>
 </bsbPanel>
 <bsbPresets>

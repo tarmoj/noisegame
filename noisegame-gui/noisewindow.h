@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "csengine.h"
 #include "wsserver.h"
+#include <QUdpSocket>
 
 namespace Ui {
 class NoiseWindow;
@@ -40,6 +41,9 @@ private:
     CsEngine *cs;
     WsServer *wsServer;
     long eventCounter;
+    QUdpSocket *udpSocket;
+    void initUDP(QHostAddress host, int port);
+    void sendUDPMessage(QString message);
 };
 
 #endif // NOISEWINDOW_H

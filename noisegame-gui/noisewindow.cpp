@@ -16,6 +16,9 @@ NoiseWindow::NoiseWindow(QWidget *parent) :
     connect(wsServer, SIGNAL(newConnection(int)), this, SLOT(setClientsCount(int)));
     connect(wsServer, SIGNAL(newEvent(QString)),this, SLOT(newEvent(QString)) );
     connect(cs,SIGNAL(newCounterValue(int)),this,SLOT(setCounter(int)));
+
+    //TODO: see plokki, mis checkboxi xheckides käivitatakse
+    initUDP(QHostAddress::LocalHost,6006);
 }
 
 NoiseWindow::~NoiseWindow()
@@ -62,9 +65,23 @@ void NoiseWindow::newEvent(QString event) {
 //    } - handled in Csound now
     //ui->noiseEventsLabel->setText(QString::number(eventCounter));
     cs->csEvent(event);
+    sendUDPMessage("scoreline_i {i 1 0 1}");
 }
 
 void NoiseWindow::on_countCheckBox_stateChanged(int value)
 {
     cs->setChannel("count",value);
+}
+
+void NoiseWindow::initUDP(QHostAddress host, int port)
+{
+    udpSocket = new QUdpSocket(this);
+    udpSocket->bind(host, port);
+}
+
+void NoiseWindow::sendUDPMessage(QString message)
+{
+    QByteArray data = message.toLocal8Bit().data();
+    int retval=udpSocket->writeDatagram(data, QHostAddress::LocalHost, 6006);
+    qDebug()<<"Bytes sent: "<<retval;
 }
