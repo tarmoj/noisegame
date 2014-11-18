@@ -70,6 +70,7 @@ void WsServer::socketDisconnected()
     QWebSocket *pClient = qobject_cast<QWebSocket *>(sender());
     if (pClient) {
         m_clients.removeAll(pClient);
+        emit newConnection(m_clients.count());
         pClient->deleteLater();
     }
 }

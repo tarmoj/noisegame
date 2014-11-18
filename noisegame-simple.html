@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type">
+    <title>Noise game simple layout</title>
+    <meta content="Tarmo Johannes" id="author">
+    
+	<link type="text/css" rel="stylesheet" href="soundgames.css">
+
+	<script src="shapednoise.js"></script> <!-- webaduio, noise and envelopes --> 
+    <script src="ws-functions.js"></script> <!-- websocket functions --> 
+    <script defer="defer">
+     
+		
+		
+		var amplitude = [0,1,0.5,0.5,0];; // envelope's nodes' amplitudes in 0..1
+		var timePoint = [0,0.05,0.1,0.75,1]; // duration of the segments in relation to whole duration. First value always 0
+		
+		function index2LogFreq(index) { // convert index (0..1) to 20.20000 in log scale
+			return Math.round(Math.pow(10, (index * 3) + 1.30102996)); // 3 = log(20000)-log(3), 1.301... = log(20)
+		}
+				
+		var upperFreq = index2LogFreq(0.5), lowerFreq = index2LogFreq(0.3);
+		
+
+	
+	
+	function sendEvent() {
+		var parameters = ['i "noise_" 0'];
+		parameters.push(document.myform.duration.value); //add parameters of the eventString and then join
+		parameters.push(lowerFreq);
+		parameters.push(upperFreq);
+		parameters.push(document.myform.pan.value);
+		parameters.push(amplitude[0]);
+		parameters.push(timePoint[1]);
+		parameters.push(amplitude[1]);
+		parameters.push(timePoint[2]);
+		parameters.push(amplitude[2]);
+		parameters.push(timePoint[3]);
+		parameters.push(amplitude[3]);
+		parameters.push(timePoint[4]);
+		parameters.push(amplitude[4]);
+		parameters.push( (document.myform.env4freq.checked) ? 1 : 0 );
+		parameters.push( (document.myform.inversed.checked) ? 1 : 0);
+		var eventString = parameters.join(" ")
+		
+		console.log("To be sent: ",eventString)
+		doSend(eventString);
+		myform.sendButton.disabled = true;
+		setTimeout(function(){ myform.sendButton.disabled = false;},2000);
+	}
+
+	
+// play noise locally ------------------------------------------------------	
+	var noise = new ShapedNoise();
+	function play() {
+		noise.setFrequencies(lowerFreq,upperFreq);
+		noise.env4freq = document.myform.env4freq.checked;
+		noise.inversed = document.myform.inversed.checked;
+		noise.amplitude = amplitude;
+		noise.timePoint = timePoint;
+		noise.duration = parseFloat(document.myform.duration.value);
+		noise.pan = parseFloat(document.myform.pan.value);
+		noise.play();
+	}	
+  
+  // UI functions --------------------------------------------------------
+	var LOWER = 0, HIGHER = 1;	
+	function handleFrequency(type) { 
+		var value = 0, limit = 0.005;
+		if (type==LOWER)	{ 
+			value = parseFloat(document.myform.lowerCutoff.value);
+			if ( value>parseFloat(document.myform.higherCutoff.value)-limit) { 	
+				value=parseFloat(document.myform.higherCutoff.value)-limit;
+				document.myform.lowerCutoff.value = value;
+			}
+			lowerFreq=index2LogFreq(value);
+			document.myform.lower_label.value = lowerFreq;
+		}
+		
+		if (type==HIGHER)	{ 
+			value = parseFloat(document.myform.higherCutoff.value);
+			if ( value<parseFloat(document.myform.lowerCutoff.value)+limit) { 	
+				value=parseFloat(document.myform.lowerCutoff.value)+limit;
+				document.myform.higherCutoff.value = value;
+			}
+			upperFreq=index2LogFreq(value);
+			document.myform.higher_label.value = upperFreq;
+		}
+		
+	}
+	
+	function checkTimePoint(number) { // checks if the position does not pass its nabours. the value must be stored in the array timePoint[number] already
+		var value = timePoint[number];
+		var limit = 0.01;
+		if (value>timePoint[number+1]-limit) 
+			timePoint[number] = timePoint[number+1]-limit;
+			//concstruct somehow to set the slider
+		if (value<timePoint[number-1]+limit)	
+			timePoint[number] = timePoint[number-1]+limit;
+		
+	}
+	
+	
+	window.onload = function(){
+		//var connectButton = document.getElementById("connectButton");
+		myform.sendButton.disabled = true;
+		document.myform.lower_label.value = lowerFreq;
+		document.myform.higher_label.value  = upperFreq;
+		document.getElementById("duration_label").innerHTML = document.getElementById("duration").value;
+		doConnect(); // init websocket on start; suppose the server is ready
+	};
+		
+	</script>
+  </head>
+  <body>
+    <h1>Noise game (simple layout)</h1>
+    <form name="myform"> 
+    Duration of sound: 
+    <input class="range"  step="0.01" value="2.5" id="duration" min="0.5" max="5" type="range"
+    oninput="duration_label.value=this.value">
+    <output name="duration_label" id="duration_label" for="duration">2.5</output> seconds<br>
+      <br>
+      Envelope (the shape of the sound) - to be used for amplitude and optionally also frequency<br>
+      <table style="width: 100%;" border="1">
+        <tbody>
+          <tr>
+            <td style="width: 10%;"><br>
+            </td>
+            <td><strong>Amplitude</strong><br>
+            </td>
+            <td style="width: 40%"><strong>Time position of the point
+                <br>
+              </strong> </td>
+            <td style="width: 40%">
+            <strong>Percent of the whole duration</strong><br>
+            </td>
+          </tr>
+          <tr>
+            <td>Point 1</td>
+            <td><input class="range"  step="0.01" value="0" id="amp0"
+                min="0" max="1" type="range" oninput = "amplitude[0]=parseFloat(this.value)" ><br>
+            </td>
+            <td>Always 0<br>
+            </td>
+            <td>0 %<br>
+            </td>
+          </tr>
+          <tr>
+            <td>Point 2<br>
+            </td>
+            <td><input class="range"  step="0.01" value="1" id="amp1" min="0" max="1" type="range" 
+            oninput = "amplitude[1]=parseFloat(this.value)"><br>
+            </td>
+            <td><input class="range"  step="0.01" value="0.05" id="time1" min="0" max="1" type="range" 
+            oninput="timePoint[1]=parseFloat(this.value); checkTimePoint(1); 
+            if (this.value!=timePoint[1]) this.value=timePoint[1];
+            time1_label.value = Math.round(timePoint[1]*100)"><br>
+            </td>
+            <td><output name="time1_label" for="time1">5</output>%<br>
+            </td>
+          </tr>
+          <tr>
+            <td>Point 3<br>
+            </td>
+            <td><input class="range"  step="0.01" value="0.5" id="amp2" min="0" max="1" type="range"
+            oninput = "amplitude[2]=parseFloat(this.value)"><br>
+            </td>
+            <td><input class="range"  step="0.01" value="0.1" id="time2" min="0" max="1" type="range"
+            oninput="timePoint[2]=parseFloat(this.value); checkTimePoint(2); 
+            if (this.value!=timePoint[2]) this.value=timePoint[2];
+            time2_label.value = Math.round(timePoint[2]*100)"><br>
+            </td>
+            <td><output name="time2_label" for="time2">10</output>%<br>
+            </td>
+          </tr>
+          <tr>
+            <td>Point 4<br>
+            </td>
+            <td><input class="range"  step="0.01" value="0.5" id="amp3" min="0" max="1" type="range" 
+            oninput = "amplitude[3]=parseFloat(this.value)"><br>
+            </td>
+            <td><input class="range"  step="0.01" value="0.75" id="time3" min="0" max="1" type="range"
+            oninput="timePoint[3]=parseFloat(this.value); checkTimePoint(3); 
+            if (this.value!=timePoint[3]) this.value=timePoint[3];
+            time3_label.value = Math.round(timePoint[3]*100)"><br>
+            </td>
+            <td><output name="time3_label" for="time3">75</output>%<br>
+            </td>
+          </tr>
+          <tr>
+            <td>Point 5<br>
+            </td>
+            <td><input class="range"  step="0.01" value="0" id="amp4" min="0" max="1" type="range"
+            oninput = "amplitude[4]=parseFloat(this.value)"><br>
+            </td>
+            <td>Always 100<br>
+            </td>
+            <td>100%<br>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+	<br>
+      Freqency band<br> <br>     
+      Lower cutoff: <input class="range"  step="0.01" value="0.3" id="lowerCutoff" min="0" max="1"
+        type="range" oninput="handleFrequency(LOWER);"> 
+       <output name="lower_label" for="lowerCutoff">20</output> Hz<br>
+      Higher cutoff: <input class="range"  step="0.01" value="0.5" id="higherCutoff" min="0" max="1"
+        type="range" oninput="handleFrequency(HIGHER);"> 
+      <output name="higher_label" for="higherCutoff">20000</output>  Hz<br><br>
+      Use envelope also for frequency<input  id="env4freq" type="checkbox"><br>
+      Frequency envelope reversed (red backwards)<input  id="inversed" type="checkbox"><br><br>
+      Panning: L <input class="range"  step="0.001" value="0.5" id="pan" min="0" max="1" type="range">
+      R <br>
+      <br>
+      <br>
+      <button type="button" class="button" id="listenButton" onclick="play()">Listen</button>
+      <button type="button" class="button" id="sendButton" onclick="sendEvent()">Send
+        to server</button> <br>
+      <div id="messageText"> </div>
+      <br>
+      Server address: <input value="ws://192.168.1.199:8008/ws" id="url" type="text"><br>
+    <button type="button" id="connectButton" onclick="doConnect();">Connect</button>
+    <!--<button type="button" id="disconnectButton">Disonnect</button>-->
+    <br>
+    <br>
+    <p><textarea id="outputtext" rows="5" cols="30" readonly></textarea> </p>
+      
+    </form>
+  </body>
+</html>

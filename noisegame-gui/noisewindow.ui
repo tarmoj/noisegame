@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>294</width>
-    <height>150</height>
+    <width>456</width>
+    <height>209</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,12 +18,19 @@
     <property name="geometry">
      <rect>
       <x>20</x>
-      <y>10</y>
-      <width>231</width>
-      <height>106</height>
+      <y>20</y>
+      <width>371</width>
+      <height>156</height>
      </rect>
     </property>
     <layout class="QGridLayout" name="gridLayout">
+     <item row="4" column="0">
+      <widget class="QCheckBox" name="csoundCheckBox">
+       <property name="text">
+        <string>Use local Csound</string>
+       </property>
+      </widget>
+     </item>
      <item row="1" column="0">
       <widget class="QLabel" name="label_2">
        <property name="text">
@@ -31,17 +38,24 @@
        </property>
       </widget>
      </item>
-     <item row="1" column="2">
-      <widget class="QPushButton" name="playBufferButton">
+     <item row="6" column="2">
+      <widget class="QPushButton" name="stopButton">
        <property name="text">
-        <string>Play buffer</string>
+        <string>Stop Csound</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="1">
-      <widget class="QLabel" name="noiseEventsLabel">
+     <item row="5" column="0">
+      <widget class="QCheckBox" name="countCheckBox">
        <property name="text">
-        <string>0</string>
+        <string>start counting</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="2">
+      <widget class="QPushButton" name="playBufferButton">
+       <property name="text">
+        <string>Play buffer</string>
        </property>
       </widget>
      </item>
@@ -52,6 +66,44 @@
        </property>
       </widget>
      </item>
+     <item row="6" column="0">
+      <widget class="QPushButton" name="testerButton">
+       <property name="text">
+        <string>5 testers</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="0">
+      <widget class="QCheckBox" name="udpCheckBox">
+       <property name="text">
+        <string>send UDP messages to:</string>
+       </property>
+       <property name="checked">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item row="3" column="1">
+      <widget class="Line" name="line">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="1">
+      <widget class="QPushButton" name="filterButton">
+       <property name="text">
+        <string>Filter</string>
+       </property>
+      </widget>
+     </item>
+     <item row="1" column="1">
+      <widget class="QLabel" name="noiseEventsLabel">
+       <property name="text">
+        <string>0</string>
+       </property>
+      </widget>
+     </item>
      <item row="0" column="1">
       <widget class="QLabel" name="numberOfClientsLabel">
        <property name="text">
@@ -59,31 +111,23 @@
        </property>
       </widget>
      </item>
-     <item row="3" column="2">
-      <widget class="QPushButton" name="stopButton">
+     <item row="2" column="1">
+      <widget class="QLineEdit" name="ipLineEdit">
        <property name="text">
-        <string>Stop Csound</string>
+        <string>192.168.1.198</string>
        </property>
       </widget>
      </item>
-     <item row="3" column="0">
-      <widget class="QPushButton" name="testerButton">
-       <property name="text">
-        <string>5 testers</string>
+     <item row="2" column="2">
+      <widget class="QSpinBox" name="portSpinBox">
+       <property name="minimum">
+        <number>1000</number>
        </property>
-      </widget>
-     </item>
-     <item row="0" column="2">
-      <widget class="QPushButton" name="filterButton">
-       <property name="text">
-        <string>Filter</string>
+       <property name="maximum">
+        <number>60000</number>
        </property>
-      </widget>
-     </item>
-     <item row="2" column="0">
-      <widget class="QCheckBox" name="countCheckBox">
-       <property name="text">
-        <string>start counting</string>
+       <property name="value">
+        <number>6006</number>
        </property>
       </widget>
      </item>

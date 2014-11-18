@@ -10,15 +10,15 @@ NoiseWindow::NoiseWindow(QWidget *parent) :
     ui->setupUi(this);
     wsServer = new WsServer(8008);
     eventCounter = 0;
-    cs = new CsEngine("noisegame.csd");
-    cs->start();
+//    useCsound = ui->csoundCheckBox->isChecked();
+//    useUdp = ui->udpCheckBox->isChecked();
+
 
     connect(wsServer, SIGNAL(newConnection(int)), this, SLOT(setClientsCount(int)));
     connect(wsServer, SIGNAL(newEvent(QString)),this, SLOT(newEvent(QString)) );
-    connect(cs,SIGNAL(newCounterValue(int)),this,SLOT(setCounter(int)));
 
     //TODO: see plokki, mis checkboxi xheckides käivitatakse
-    initUDP(QHostAddress::LocalHost,6006);
+    //initUDP(QHostAddress::LocalHost,6006);
 }
 
 NoiseWindow::~NoiseWindow()
@@ -38,50 +38,76 @@ void NoiseWindow::setCounter(int counter)
 
 void NoiseWindow::on_filterButton_clicked()
 {
-    cs->csEvent("i \"filter\" 0 5 "); //TODO - vali, kui pikalt
+    if (ui->csoundCheckBox->isChecked())
+        cs->csEvent("i \"filter\" 0 5 "); //TODO - vali, kui pikalt
 }
 
 void NoiseWindow::on_playBufferButton_clicked()
 {
-    cs->csEvent("i \"play_buffer\" 0 10 "); //TODO - vali, kui pikalt
+    if (ui->csoundCheckBox->isChecked())
+        cs->csEvent("i \"play_buffer\" 0 10 "); //TODO - vali, kui pikalt
 }
 
 
 
 void NoiseWindow::on_testerButton_clicked()
 {
-    cs->csEvent("i \"start_tester\" 0 0 5 ");
+    if (ui->csoundCheckBox->isChecked())
+        cs->csEvent("i \"start_tester\" 0 0 5 ");
 
 }
 
 void NoiseWindow::on_stopButton_clicked()
 {
-    cs->stop();
+    if (ui->csoundCheckBox->isChecked())
+        cs->stop();
 }
 
 void NoiseWindow::newEvent(QString event) {
-//    if (++eventCounter%COUNT4FILTER==0) {
-//       on_filterButton_clicked();
-//    } - handled in Csound now
-    //ui->noiseEventsLabel->setText(QString::number(eventCounter));
-    cs->csEvent(event);
-    sendUDPMessage("scoreline_i {i 1 0 1}");
+    ui->noiseEventsLabel->setText(QString::number(++eventCounter));
+    if (ui->csoundCheckBox->isChecked())
+        cs->csEvent(event);
+    if (ui->udpCheckBox->isChecked())
+        sendUDPMessage("scoreline_i {{ " + event + " }}");
+    qDebug()<<event;
 }
 
 void NoiseWindow::on_countCheckBox_stateChanged(int value)
 {
-    cs->setChannel("count",value);
+    if (ui->csoundCheckBox->isChecked())
+        cs->setChannel("count",value);
 }
 
-void NoiseWindow::initUDP(QHostAddress host, int port)
-{
-    udpSocket = new QUdpSocket(this);
-    udpSocket->bind(host, port);
-}
+//TODO: levels
+
+//void NoiseWindow::initUDP(QHostAddress host, int port)
+//{
+//    udpSocket = new QUdpSocket(this);
+//    udpSocket->bind(host, port);
+//}
 
 void NoiseWindow::sendUDPMessage(QString message)
 {
     QByteArray data = message.toLocal8Bit().data();
-    int retval=udpSocket->writeDatagram(data, QHostAddress::LocalHost, 6006);
+    QUdpSocket * udpSocket  = new QUdpSocket(this);
+    int retval=udpSocket->writeDatagram(data, QHostAddress(ui->ipLineEdit->text()), ui->portSpinBox->value());
     qDebug()<<"Bytes sent: "<<retval;
+    udpSocket->close(); // for any case
+}
+
+
+void NoiseWindow::on_csoundCheckBox_toggled(bool checked)
+{
+    if (checked) {
+        cs = new CsEngine("noisegame.csd");
+        cs->start();
+        cs->setChannel("level",0.4);
+        cs->setChannel("filter",0.25);
+        cs->setChannel("buffer",0.5);
+        //connect(cs,SIGNAL(newCounterValue(int)),this,SLOT(setCounter(int)));
+
+    } else {
+        cs->stop();
+        cs->deleteLater();
+    }
 }

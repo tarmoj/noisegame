@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type">
+    <title>Müramäng</title>
+    <meta content="Tarmo Johannes" id="author">
+	
+	<link type="text/css" rel="stylesheet" href="soundgames.css">
+	
+	<script src="kinetic-v5.0.2.min.js"></script> <!-- image movement etc-->
+    <script src="shapednoise.js"></script> <!-- webaduio, noise and envelopes --> 
+    <script src="ws-functions.js"></script> <!-- websocket functions --> 
+    <script defer="defer" src="noisegame-ui.js"></script>
+  </head>
+  <body><h1>Müramäng</h1>
+    
+    <form name = "myform" oninput="duration_label.value=duration.value">
+    <!--Envelope (can be used for amplitude and also frequency)     //       Freqency band for bandpass filter<br>-->
+    Liigutage kollaseid sõõre, liigutage kollast kasti ja muutke selle suurust - andke oma mürahelile kuju ja umbkaudne kõrgus.
+    
+    <div id="envelope_container"></div>
+    
+    Ribafiltri sagedusala: <span id="lower_freq"> 0 </span> - <span id="higher_freq"> 10000 </span> Hz
+    <br>
+    Kasuta kontuuri ka sageduse juures<input id="env4freq"  type="checkbox"><br>  
+    Loe kontuur sageduse jaoks tagurpidi<input id="inversed"  type="checkbox"><br><br>
+    Heli Kestus (sekundites): 
+    <input step="0.01" value="2.5" id="duration" min="0.5" max="5" type="range" class="range">
+    <output name="duration_label" for="duration" id="duration_label">2.5</output><br>
+    <br>
+    Panoraam:  Vasak <input step="0.001" value="0.5" id="pan" min="0" max="1" type="range" class="range"> Parem <br><br>
+    
+    <button type="button" class="button" id="listenButton" onclick="play()">Kuula</button>  
+    <button type="button" class="button" id="sendButton" onclick="sendEvent()" disabled="true">Saada serverisse</button>
+    <br>
+    <div id="messageText"> </div><br>
+    <br>
+    
+    Serveri aadress: <input value="ws://192.168.1.199:8008/ws" id="url" type="text"><br>
+    <button type="button" id="connectButton" onclick="doConnect();">Ühenda</button>
+    <!--<button type="button" id="disconnectButton">Disonnect</button>-->
+    
+    <br>
+    <p><textarea id="outputtext" rows="5" cols="30" readonly></textarea> </p>
+   
+	</form>
+   
+   
+  </body>
+</html>

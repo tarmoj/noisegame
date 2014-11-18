@@ -123,7 +123,7 @@ endin
 
 ;schedule "noise_",0,7, 100,2000,  0.5,    0.01,   0.02, 1,     0.02, 0.2,   0.6,0.3,  0.2, 1,    1,0
 
-instr noise_ , 10
+instr noise_ 
 	
 	idur = p3
 	ifreqLower =  p4 
@@ -166,7 +166,7 @@ instr noise_ , 10
 	ifreqEnvInversed = p17
 	itablesize = 2048
 	
-	ipanindex = int(ipan*ftlen(giFreqStorage))
+	ipanindex = int(ipan*(ftlen(giFreqStorage)-1))
 	tabw_i ifreqLower+iband/2, ipanindex, giFreqStorage ; store the frequency by the pan point at the beginning
 	
 	itable ftgentmp 0,0, itablesize, 7,  iamp0, itime1*itablesize, iamp1, itime2*itablesize, iamp2, itime3*itablesize, iamp3, itime4*itablesize,iamp4
@@ -236,6 +236,8 @@ instr filter
 	
 	kcutoff port kcutoff,0.02, istartfreq	
 	ain = (gaL+gaR)/2
+	ktest rms ain
+	outvalue "display",ktest
 	aenv madsr 0.1,0,1,0.2;linenr 1,0.1,0.2, 0.01
 
 	abp butterbp ain, kcutoff, kcutoff/16 ; bring it out
@@ -398,13 +400,15 @@ endin
 
 
 
+
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
  <x>0</x>
  <y>0</y>
- <width>319</width>
- <height>378</height>
+ <width>354</width>
+ <height>391</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
@@ -535,7 +539,7 @@ endin
   <image>/</image>
   <eventLine>i "play_buffer" 0 8</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>counter</objectName>
@@ -547,7 +551,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>186.000</label>
+  <label>2.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -627,7 +631,7 @@ endin
   <image>/</image>
   <eventLine>i "start_tester" 0 0 5</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button8</objectName>
@@ -646,7 +650,7 @@ endin
   <image>/</image>
   <eventLine>i "scheduleBufPlay"  0 300</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBVSlider">
   <objectName>level</objectName>
@@ -707,7 +711,7 @@ endin
   <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.30000000</value>
+  <value>0.27000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>

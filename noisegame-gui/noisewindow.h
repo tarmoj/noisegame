@@ -36,13 +36,16 @@ private slots:
 
     void on_countCheckBox_stateChanged(int arg1);
 
+    void on_csoundCheckBox_toggled(bool checked);
+
 private:
     Ui::NoiseWindow *ui;
     CsEngine *cs;
     WsServer *wsServer;
     long eventCounter;
-    QUdpSocket *udpSocket;
-    void initUDP(QHostAddress host, int port);
+    //bool useCsound, useUdp;
+    //QUdpSocket *udpSocket;
+    //void initUDP(QHostAddress host, int port);
     void sendUDPMessage(QString message);
 };
 
