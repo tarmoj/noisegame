@@ -315,20 +315,19 @@ endin
 
 ;schedule "play_buffer",0,30
 instr play_buffer
-	turnoff2 "filter",0,1
-;	imax TableMax_i giBuffer, 1
-;	iscale = (imax==0) ? 1 :1/imax; to normalize the table, avoid division by 0
-;	print imax, iscale
-	NormalizeTable giBuffer, -3
+	imax TableMax_i giBuffer, 1
+	if (imax==0) then ; quit when the buffer is empty
+		turnoff
+	endif
+	turnoff2 "filter",0,1 ; stop filter, if playing
+
+	NormalizeTable giBuffer, -3 ; to -3 db
 	
 	aenv madsr 0.05,0.1, 0.6, 1 ;linen 1,0.01,p3,0.05
 	gkFilterPlaying = 1 ; set flag to sound_out to dim its level
 	
-	;asig temposcal 1/(p3/$BUFLEN) , 1, 1, giBuffer, 1
-	
 	;ktimewarp init p3/$BUFLEN ;
 	ktimewarp line 0, p3, $BUFLEN	
-	;length of "fox.wav"
 	kresample init 1		;do not change pitch
 	ibeg = 0			;start at beginning
 	iwsize = sr/5 ; 44100			;window size in samples with
@@ -338,12 +337,12 @@ instr play_buffer
 	
 	asig sndwarp 0.5, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, giWindow, itimemode
 	
-	alowShelf pareq asig, 595,ampdb(chnget:k("lowgain")), 0.2, 1
-	ahighShelf pareq asig, 800,ampdb(chnget:k("highgain")), 0.2, 2 
+	alowShelf pareq asig, 600,ampdb(chnget:k("lowgain")), 0.2, 1
+	ahighShelf pareq asig, 1200,ampdb(chnget:k("highgain")), 0.2, 2 
 	
 	
 	kbufferLevel port chnget:k("buffer"), 0.02
-	aout = (alowShelf+ahighShelf+asig)*0.5 * gkLevel * aenv * kbufferLevel 
+	aout = (alowShelf+ahighShelf+asig*0.25)*0.5 * gkLevel * aenv * kbufferLevel 
 	 
 	outs aout,aout
 	
@@ -396,6 +395,9 @@ endin
 
 
 
+
+
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
@@ -410,6 +412,35 @@ endin
   <g>255</g>
   <b>255</b>
  </bgcolor>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>0</x>
+  <y>308</y>
+  <width>353</width>
+  <height>83</height>
+  <uuid>{592b40e3-3d5a-4710-958b-e5b9f7744121}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Testing:</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>border</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
  <bsbObject version="2" type="BSBLabel">
   <objectName/>
   <x>250</x>
@@ -441,8 +472,8 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button1</objectName>
-  <x>74</x>
-  <y>297</y>
+  <x>125</x>
+  <y>337</y>
   <width>100</width>
   <height>30</height>
   <uuid>{70a7518d-500c-4d82-bc2d-73bf0d126a27}</uuid>
@@ -456,19 +487,19 @@ endin
   <image>/</image>
   <eventLine>i "filter" 0 4</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>display</objectName>
   <x>107</x>
-  <y>243</y>
+  <y>252</y>
   <width>80</width>
   <height>25</height>
   <uuid>{b73fe584-dce8-4533-8a27-19815af089c9}</uuid>
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>300.000</label>
+  <label>15.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -489,8 +520,8 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button3</objectName>
-  <x>77</x>
-  <y>338</y>
+  <x>227</x>
+  <y>337</y>
   <width>100</width>
   <height>30</height>
   <uuid>{f74857ad-25a4-420a-8b06-6e0d4f2babb9}</uuid>
@@ -508,15 +539,15 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>counter</objectName>
-  <x>201</x>
-  <y>243</y>
+  <x>107</x>
+  <y>212</y>
   <width>80</width>
   <height>25</height>
   <uuid>{ab61ab05-6f15-48aa-affc-ae5bd558cdbe}</uuid>
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>651.000</label>
+  <label>186.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -537,10 +568,10 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBCheckBox">
   <objectName>count</objectName>
-  <x>282</x>
-  <y>298</y>
-  <width>20</width>
-  <height>20</height>
+  <x>320</x>
+  <y>212</y>
+  <width>23</width>
+  <height>27</height>
   <uuid>{e0ae05ba-1598-4680-966b-313da03a80f2}</uuid>
   <visible>true</visible>
   <midichan>0</midichan>
@@ -552,15 +583,15 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBLabel">
   <objectName/>
-  <x>198</x>
-  <y>296</y>
-  <width>80</width>
-  <height>25</height>
+  <x>209</x>
+  <y>212</y>
+  <width>100</width>
+  <height>28</height>
   <uuid>{a0baf04b-360e-4a11-85ff-167051f96f93}</uuid>
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>Start counting</label>
+  <label>Count for filters</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -581,8 +612,8 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>channel</objectName>
-  <x>2</x>
-  <y>243</y>
+  <x>19</x>
+  <y>337</y>
   <width>100</width>
   <height>30</height>
   <uuid>{882def15-ad85-436c-a491-65e65967e234}</uuid>
@@ -600,8 +631,8 @@ endin
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button8</objectName>
-  <x>219</x>
-  <y>348</y>
+  <x>209</x>
+  <y>252</y>
   <width>100</width>
   <height>30</height>
   <uuid>{3546fa16-557b-4ae8-96eb-39120af44433}</uuid>
@@ -629,7 +660,7 @@ endin
   <midicc>1</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.00001000</value>
+  <value>0.42000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -676,7 +707,7 @@ endin
   <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.37795276</value>
+  <value>0.30000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -723,7 +754,7 @@ endin
   <midicc>3</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.59055118</value>
+  <value>0.63000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -770,7 +801,7 @@ endin
   <midicc>6</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>11.00000000</value>
+  <value>2.42000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -788,7 +819,7 @@ endin
   <midicc>7</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>3.20472441</value>
+  <value>11.00000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -852,7 +883,65 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>1</x>
+  <y>212</y>
+  <width>98</width>
+  <height>31</height>
+  <uuid>{5efe64cc-346c-4f38-a518-7c12a8675adb}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Noise events:</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>1</x>
+  <y>252</y>
+  <width>99</width>
+  <height>40</height>
+  <uuid>{f7ad32e8-dd0f-4686-9f77-885db5625498}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Time (buffers' section):</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
 </bsbPanel>
 <bsbPresets>
 </bsbPresets>
-<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="true" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
+<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="false" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
