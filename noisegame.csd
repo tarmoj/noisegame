@@ -123,13 +123,11 @@ endin
 
 ;schedule "noise_",0,7, 100,2000,  0.5,    0.01,   0.02, 1,     0.02, 0.2,   0.6,0.3,  0.2, 1,    1,0
 
-instr noise_ 
-	
+instr noise_ 	
 	idur = p3
 	ifreqLower =  p4 
 	ifreqHigher = p5
-	iband = ifreqHigher-ifreqLower
-	
+	iband = ifreqHigher-ifreqLower	
 
 	if (chnget:i("count")>0) then ; coun only when checkbox checked
 		giNoiseCounter += 1
@@ -139,17 +137,9 @@ instr noise_
 	endif
 	chnset giNoiseCounter, "counter"
 	
-	if (active("play_buffer")>0) then ; don't allow noise events when buffer is playing, but allow to get new data to buffer
-		turnoff
-	endif
-	
 	if (giNoiseCounter%giFilterStart==0) then
 		schedule "filter", 0, 6
 	endif
-	; start playBuffer
-;	if (giNoiseCounter%giBufferStart==0) then
-;		schedule "play_buffer", 0, 8
-;	endif
 	
 	
 	ipan = p6 
@@ -169,12 +159,12 @@ instr noise_
 	ipanindex = int(ipan*(ftlen(giFreqStorage)-1))
 	tabw_i ifreqLower+iband/2, ipanindex, giFreqStorage ; store the frequency by the pan point at the beginning
 	
-	itable ftgentmp 0,0, itablesize, 7,  iamp0, itime1*itablesize, iamp1, itime2*itablesize, iamp2, itime3*itablesize, iamp3, itime4*itablesize,iamp4
+	itable ftgentmp 0,0, itablesize, 7,  iamp0, itime1*itablesize, iamp1, itime2*itablesize, iamp2, itime3*itablesize, iamp3, itime4*itablesize,iamp4 ; create table from given envelope points
 	
 	adeclick linen 1, 0.05, idur, 0.1
-	aenvelope  oscili 1,  1/p3, itable  ;linseg  iamp0, itime1, iamp1, itime2, iamp2, itime3, iamp3, itime4,iamp4
+	aenvelope  oscili 1,  1/p3, itable  ; read envelope
 	anoise  pinkish adeclick*aenvelope
-	kfreq init  ifreqLower+iband/2
+	kcenterFreq init  ifreqLower+iband/2
 	kband init iband
 	if (iuse4freq > 0 ) then
 		if (ifreqEnvInversed>0) then
@@ -183,13 +173,20 @@ instr noise_
 			kindex line 0,p3,1
 		endif
 		kenv2 tablei kindex, itable, 1
-		kfreq =  ifreqLower + iband*kenv2 ; TODO
-		kfreq limit kfreq, 20+iband/2,20000-iband/2
-		;printk2 kfreq
+		idownlimit = (ifreqLower + iband/2)*0.6667 ; fifth down from center
+		iuplimit = (ifreqLower + iband/2)*1.5 ; fifth up
+		kcenterFreq =  idownlimit +  kenv2*(iuplimit-idownlimit) ; move centerfreq according to envelope
+		
 	endif
-	;alp butterlp anoise, kfreq
-	;afiltered butterhp alp, ifreqLower
-	afiltered butterbp anoise, kfreq, kfreq/4
+	
+	khighFreq limit kcenterFreq+iband/2, 22, 20000
+	klowFreq limit  kcenterFreq-iband/2, 20, 18000
+	alp butterlp anoise, khighFreq
+	alp butterlp alp, khighFreq ; twice to get better cutoff
+	afiltered butterhp alp, klowFreq
+	afiltered butterhp afiltered, klowFreq
+	
+	;afiltered butterbp anoise, kcenterFreq, kfreq/4
 	
 	aL, aR pan2 afiltered, ipan
 	gaL += aL
@@ -236,8 +233,6 @@ instr filter
 	
 	kcutoff port kcutoff,0.02, istartfreq	
 	ain = (gaL+gaR)/2
-	ktest rms ain
-	outvalue "display",ktest
 	aenv madsr 0.1,0,1,0.2;linenr 1,0.1,0.2, 0.01
 
 	abp butterbp ain, kcutoff, kcutoff/16 ; bring it out
@@ -340,11 +335,11 @@ instr play_buffer
 	asig sndwarp 0.5, ktimewarp, kresample, giBuffer, ibeg, iwsize, irandw, ioverlap, giWindow, itimemode
 	
 	alowShelf pareq asig, 600,ampdb(chnget:k("lowgain")), 0.2, 1
-	ahighShelf pareq asig, 1200,ampdb(chnget:k("highgain")), 0.2, 2 
+	ahighShelf pareq asig, 600,ampdb(chnget:k("highgain")), 0.2, 2 
 	
 	
 	kbufferLevel port chnget:k("buffer"), 0.02
-	aout = (alowShelf+ahighShelf+asig*0.25)*0.5 * gkLevel * aenv * kbufferLevel 
+	aout = (alowShelf+ahighShelf+asig*0.1)*0.5 * gkLevel * aenv * kbufferLevel 
 	 
 	outs aout,aout
 	
@@ -358,7 +353,7 @@ alwayson "sound_out"
 instr sound_out
 	gkLevel chnget "level"
 	
-	kamp = (gkFilterPlaying==1) ? 0.1 :1
+	kamp = (gkFilterPlaying==1) ? 0.3 :1
 	kamp port kamp, 0.01, 1
 	;outvalue "level", kamp
 	outs gaL*gkLevel*kamp*gkEndLevel, gaR*gkLevel*kamp*gkEndLevel
@@ -378,6 +373,9 @@ endin
 <CsScore>
 </CsScore>
 </CsoundSynthesizer>
+
+
+
 
 
 
@@ -503,7 +501,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>15.000</label>
+  <label>68.226</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -539,7 +537,7 @@ endin
   <image>/</image>
   <eventLine>i "play_buffer" 0 8</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>counter</objectName>
@@ -551,7 +549,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>2.000</label>
+  <label>107.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -664,7 +662,7 @@ endin
   <midicc>1</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.42000000</value>
+  <value>0.24000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -711,7 +709,7 @@ endin
   <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.27000000</value>
+  <value>0.49000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -757,8 +755,8 @@ endin
   <midichan>1</midichan>
   <midicc>3</midicc>
   <minimum>0.00000000</minimum>
-  <maximum>1.00000000</maximum>
-  <value>0.63000000</value>
+  <maximum>3.00000000</maximum>
+  <value>1.83000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -805,7 +803,7 @@ endin
   <midicc>6</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>2.42000000</value>
+  <value>3.74000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -823,7 +821,7 @@ endin
   <midicc>7</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>11.00000000</value>
+  <value>-7.48000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -948,4 +946,4 @@ endin
 </bsbPanel>
 <bsbPresets>
 </bsbPresets>
-<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="false" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
+<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="true" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
