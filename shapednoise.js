@@ -52,7 +52,7 @@ ShapedNoise.prototype.play = function() {
   this.filter.type = "bandpass";
   this.filter.frequency.value = this.centerFreq;
   this.filter.Q.value = this.centerFreq/this.band;
-  console.log(this.filter.frequency.value, this.filter.Q.value);
+  //console.log(this.filter.frequency.value, this.filter.Q.value);
   
   this.noise.connect(this.gainNode);
   this.gainNode.connect(this.filter);
@@ -92,7 +92,7 @@ ShapedNoise.prototype.envelope = function(duration, parameter,startvalue, endval
 		if (!inversed) {
 			time = this.timeSlice[i] * duration;// += this.timeSlice[i]; // sum the time from time slices in array -  KONTROLLI, kuidas NOISEGAME'i kood kas vahed või ajahetked
 			parameter.linearRampToValueAtTime( startvalue+this.amplitude[i]*(endvalue-startvalue), now+time);
-			console.log(now+time, this.amplitude[i]);
+			//console.log(now+time, this.amplitude[i]);
 		} else { // inversed envelope
 			time = (1-this.timeSlice[4-i]) * duration;
 			//console.log(time, this.amplitude[4-i]);

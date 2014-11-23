@@ -26,11 +26,15 @@ a { color: rgb(200,200,200);
 input.button {
 	 border-radius: 8px;
 	 font-size: 20px;
+	 background-color: #D3D3D3;
+	 color: #000000;
 }
 
 button {
 	 border-radius: 8px;
 	 font-size: 20px;
+	 background-color: #D3D3D3;
+	 color: #000000;
 }
 
 

@@ -10,15 +10,10 @@ NoiseWindow::NoiseWindow(QWidget *parent) :
     ui->setupUi(this);
     wsServer = new WsServer(8008);
     eventCounter = 0;
-//    useCsound = ui->csoundCheckBox->isChecked();
-//    useUdp = ui->udpCheckBox->isChecked();
-
 
     connect(wsServer, SIGNAL(newConnection(int)), this, SLOT(setClientsCount(int)));
     connect(wsServer, SIGNAL(newEvent(QString)),this, SLOT(newEvent(QString)) );
-
-    //TODO: see plokki, mis checkboxi xheckides käivitatakse
-    //initUDP(QHostAddress::LocalHost,6006);
+    sendUDPMessage(""); // perhaps this helps that the first actual message would be correct (not ended with extra porrige)
 }
 
 NoiseWindow::~NoiseWindow()
