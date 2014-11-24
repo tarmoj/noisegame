@@ -9,7 +9,7 @@
 sr = 44100
 nchnls = 2
 0dbfs = 1
-ksmps = 32
+ksmps = 4
 
 seed 0
 
@@ -129,7 +129,6 @@ instr noise_
 	ifreqLower =  p4 
 	ifreqHigher = p5
 	iband = ifreqHigher-ifreqLower	
-
 	if (chnget:i("count")>0) then ; coun only when checkbox checked
 		giNoiseCounter += 1
 		if (active("play_buffer")<1 && giNoiseCounter%5==0 ) then ; store to buffer only when play_buffer is not playing, otherwise new sound may appear in the long sound
@@ -155,7 +154,7 @@ instr noise_
 	iamp4 = p15 ; last amp
 	iuse4freq = p16 ; if > 0 use the envelope also for freq from iFreqLower to ifreqHigher to be used by instr filter
 	ifreqEnvInversed = p17
-	itablesize = 2048
+	itablesize = 4096 ; perhaps can be also smaller
 	
 	ipanindex = int(ipan*(ftlen(giFreqStorage)-1))
 	tabw_i ifreqLower+iband/2, ipanindex, giFreqStorage ; store the frequency by the pan point at the beginning
@@ -163,7 +162,7 @@ instr noise_
 	itable ftgentmp 0,0, itablesize, 7,  iamp0, itime1*itablesize, iamp1, itime2*itablesize, iamp2, itime3*itablesize, iamp3, itime4*itablesize,iamp4 ; create table from given envelope points
 	
 	adeclick linen 1, 0.05, idur, 0.1
-	aenvelope  oscili 1,  1/p3, itable  ; read envelope
+	aenvelope  poscil3 1,  1/p3, itable  ; read envelope
 	anoise  pinkish adeclick*aenvelope
 	kcenterFreq init  ifreqLower+iband/2
 	kband init iband
@@ -173,19 +172,21 @@ instr noise_
 		else
 			kindex line 0,p3,1
 		endif
-		kenv2 tablei kindex, itable, 1
-		idownlimit = (ifreqLower + iband/2)*0.6667 ; fifth down from center
-		iuplimit = (ifreqLower + iband/2)*1.5 ; fifth up
+		kenv2 table3 kindex, itable, 1
+		idownlimit = (ifreqLower + iband/2)*0.5 ; octave down from center
+		iuplimit = (ifreqLower + iband/2)*2 ; octave up
 		kcenterFreq =  idownlimit +  kenv2*(iuplimit-idownlimit) ; move centerfreq according to envelope
 		
 	endif
 	
+	;khighFreq = kcenterFreq+iband/2
+	;klowFreq = kcenterFreq-iband/2
 	khighFreq limit kcenterFreq+iband/2, 22, 20000
 	klowFreq limit  kcenterFreq-iband/2, 20, 18000
 	alp butterlp anoise, khighFreq
-	alp butterlp alp, khighFreq ; twice to get better cutoff
+	;alp butterlp alp, khighFreq ; twice to get better cutoff
 	afiltered butterhp alp, klowFreq
-	afiltered butterhp afiltered, klowFreq
+	;afiltered butterhp afiltered, klowFreq
 	
 	;afiltered butterbp anoise, kcenterFreq, kfreq/4
 	
@@ -405,6 +406,9 @@ endin
 
 
 
+
+
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
@@ -554,7 +558,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>7.000</label>
+  <label>8.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -667,7 +671,7 @@ endin
   <midicc>1</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.13000000</value>
+  <value>0.28000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
