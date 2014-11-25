@@ -13,7 +13,6 @@ NoiseWindow::NoiseWindow(QWidget *parent) :
 
     connect(wsServer, SIGNAL(newConnection(int)), this, SLOT(setClientsCount(int)));
     connect(wsServer, SIGNAL(newEvent(QString)),this, SLOT(newEvent(QString)) );
-    sendUDPMessage(""); // perhaps this helps that the first actual message would be correct (not ended with extra porrige)
 }
 
 NoiseWindow::~NoiseWindow()
