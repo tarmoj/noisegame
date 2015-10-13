@@ -49,7 +49,7 @@ label:
 endop
 
 
-; GLOBALS:
+;; GLOBALS:
 
 gkLevel init $STARTLEVEL
 gkFilterPlaying init 0
@@ -61,15 +61,17 @@ giBufferStart init 4*giFilterStart-2
 giNoiseCounter init 1
 gkEndLevel init 1
 
-;CHANNELS:
+;; CHANNELS:
 chn_k "counter",2
 chn_k "count",1 ; if 1 count
 chn_k "level",3
 chn_k "filter",1
 chn_k "buffer",1
 chn_k "display", 2
+chn_k "lowgain",3
+chn_k "highgain",3
 
-;TABLES:
+;;TABLES:
 giFreqStorage ftgen 10,0,1024, 7, 0, 1024, 0 ; empty table to store here frequencies by the pan positions
 giBuffer ftgen 0,0,sr, 2,0
 giNormalizedBuffer  ftgen 0,0,sr, 2,0
@@ -315,6 +317,9 @@ endin
 
 ;schedule "play_buffer",0,30
 instr play_buffer
+	; TO PLAT ALONE: RANDOM GAIN for filters
+	;chnset random:i(-10,11),"lowgain"
+	;chnset random:i(-10,11),"highgain"
 	imax TableMax_i giBuffer, 1
 	if (imax==0) then ; quit when the buffer is empty
 		turnoff
@@ -323,7 +328,7 @@ instr play_buffer
 
 	NormalizeTable giBuffer, giNormalizedBuffer, -3 ; to -3 db
 	
-	aenv madsr 0.05,0.1, 0.6, 1 ;linen 1,0.01,p3,0.05
+	aenv madsr 0.05,0.1, 0.6, 0.05 ;linen 1,0.01,p3,0.05
 	gkFilterPlaying = 1 ; set flag to sound_out to dim its level
 	
 	;ktimewarp init p3/$BUFLEN ;
@@ -376,6 +381,9 @@ endin
 <CsScore>
 </CsScore>
 </CsoundSynthesizer>
+
+
+
 
 
 
@@ -498,7 +506,7 @@ endin
   <image>/</image>
   <eventLine>i "filter" 0 4</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>display</objectName>
@@ -510,7 +518,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>13.000</label>
+  <label>0.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -544,9 +552,9 @@ endin
   <stringvalue/>
   <text>Play buffer</text>
   <image>/</image>
-  <eventLine>i "play_buffer" 0 20</eventLine>
+  <eventLine>i "play_buffer" 0 10</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>counter</objectName>
@@ -558,7 +566,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>8.000</label>
+  <label>32.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -638,7 +646,7 @@ endin
   <image>/</image>
   <eventLine>i "start_tester" 0 0 5</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button8</objectName>
@@ -657,7 +665,7 @@ endin
   <image>/</image>
   <eventLine>i "scheduleBufPlay"  0 319</eventLine>
   <latch>false</latch>
-  <latched>false</latched>
+  <latched>true</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBVSlider">
   <objectName>level</objectName>
@@ -668,10 +676,10 @@ endin
   <uuid>{35ff240e-de17-44f0-a5bd-37a223accafc}</uuid>
   <visible>true</visible>
   <midichan>1</midichan>
-  <midicc>1</midicc>
+  <midicc>0</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.28000000</value>
+  <value>0.40944882</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -715,10 +723,10 @@ endin
   <uuid>{20a7be8c-f770-41a6-b152-a6ce89d1d916}</uuid>
   <visible>true</visible>
   <midichan>1</midichan>
-  <midicc>2</midicc>
+  <midicc>1</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.80000000</value>
+  <value>0.62204724</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -762,10 +770,10 @@ endin
   <uuid>{e5e30d9e-d000-4778-b98b-1e1583d02e07}</uuid>
   <visible>true</visible>
   <midichan>1</midichan>
-  <midicc>3</midicc>
+  <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>3.00000000</maximum>
-  <value>2.28000000</value>
+  <value>2.52755906</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -812,7 +820,7 @@ endin
   <midicc>6</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>6.16000000</value>
+  <value>-0.47927521</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -830,7 +838,7 @@ endin
   <midicc>7</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>-1.54000000</value>
+  <value>2.88734252</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -955,4 +963,4 @@ endin
 </bsbPanel>
 <bsbPresets>
 </bsbPresets>
-<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="false" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
+<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="true" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>

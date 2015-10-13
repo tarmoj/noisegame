@@ -54,7 +54,6 @@ void WsServer::processTextMessage(QString message)
         emit newEvent(message);
     }
 
-
 }
 
 //void WsServer::processBinaryMessage(QByteArray message)
@@ -72,8 +71,9 @@ void WsServer::socketDisconnected()
         m_clients.removeAll(pClient);
         emit newConnection(m_clients.count());
         pClient->deleteLater();
-    }
+	}
 }
+
 
 
 void WsServer::sendMessage(QWebSocket *socket, QString message )

@@ -34,7 +34,6 @@ private:
     QWebSocketServer *m_pWebSocketServer;
     QList<QWebSocket *> m_clients;
     QHash<QString, int>  clientsHash;
-
 };
 
 
