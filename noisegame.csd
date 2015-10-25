@@ -70,6 +70,7 @@ chn_k "buffer",1
 chn_k "display", 2
 chn_k "lowgain",3
 chn_k "highgain",3
+chn_k "keepTesting",1
 
 ;;TABLES:
 giFreqStorage ftgen 10,0,1024, 7, 0, 1024, 0 ; empty table to store here frequencies by the pan positions
@@ -117,7 +118,10 @@ instr tester
 	;print ifreqLower,	ifreqHigher, ipan, iamp0, itime1, iamp1, itime2, iamp2, itime3, iamp3, itime4, iamp4, iuse4freq,  ifreqEnvInversed
 	schedule "noise_",0,idur, ifreqLower,	ifreqHigher, ipan, iamp0, itime1, iamp1, itime2, iamp2, itime3, iamp3, itime4, iamp4, iuse4freq,  ifreqEnvInversed
 	;print inextTime
-	schedule "tester", inextTime, random:i(0.5,5);, imynumber 
+	
+	if (chnget:i("keepTesting")>0) then 
+		schedule "tester", inextTime, random:i(0.5,5);, imynumber 
+	endif
 	turnoff
 
 endin
@@ -163,7 +167,8 @@ instr noise_
 	
 	itable ftgentmp 0,0, itablesize, 7,  iamp0, itime1*itablesize, iamp1, itime2*itablesize, iamp2, itime3*itablesize, iamp3, itime4*itablesize,iamp4 ; create table from given envelope points
 	
-	adeclick linen 1, 0.05, idur, 0.1
+	;adeclick linenr 1, 0.05, 0.1,0.001
+	adeclick linen 1,0.05,p3,0.1
 	aenvelope  poscil3 1,  1/p3, itable  ; read envelope
 	anoise  pinkish adeclick*aenvelope
 	kcenterFreq init  ifreqLower+iband/2
@@ -175,6 +180,7 @@ instr noise_
 			kindex line 0,p3,1
 		endif
 		kenv2 table3 kindex, itable, 1
+		;kenv2 *= adeclick ; for any case
 		idownlimit = (ifreqLower + iband/2)*0.5 ; octave down from center
 		iuplimit = (ifreqLower + iband/2)*2 ; octave up
 		kcenterFreq =  idownlimit +  kenv2*(iuplimit-idownlimit) ; move centerfreq according to envelope
@@ -183,7 +189,7 @@ instr noise_
 	
 	;khighFreq = kcenterFreq+iband/2
 	;klowFreq = kcenterFreq-iband/2
-	khighFreq limit kcenterFreq+iband/2, 22, 20000
+	khighFreq limit kcenterFreq+iband/2, 22, 19000
 	klowFreq limit  kcenterFreq-iband/2, 20, 18000
 	alp butterlp anoise, khighFreq
 	;alp butterlp alp, khighFreq ; twice to get better cutoff
@@ -191,6 +197,10 @@ instr noise_
 	;afiltered butterhp afiltered, klowFreq
 	
 	;afiltered butterbp anoise, kcenterFreq, kfreq/4
+	
+	if (rms(afiltered)>1) then ; for security
+		turnoff 
+	endif
 	
 	aL, aR pan2 afiltered, ipan
 	gaL += aL
@@ -218,12 +228,14 @@ instr filter
 		istartfreq tab_i index, giFreqStorage
 		index += 1
 	od  
+	istartfreq limit istartfreq, 0, 13000 ; somehow explodes if that higher
 	print istartfreq
 	if istartfreq==0 then ; no frequencies in the table - no sound playing
 		turnoff
 	endif
 	gkFilterPlaying = 1 ; set flag to sound_out to dim its level
 	kfreq init 0
+	
 	kcutoff init istartfreq ; 0?
 	kindex  linseg 0,p3,ftlen(giFreqStorage) ; if just line, continues to rise during release phase
 	kfreq tab kindex, giFreqStorage
@@ -235,19 +247,30 @@ instr filter
 	;printk2 kcutoff
 
 	
-	kcutoff port kcutoff,0.02, istartfreq	
+	kcutoff port kcutoff,0.02, istartfreq
+	kcutoff limit kcutoff, 50, 14000 ; does it help?	
 	ain = (gaL+gaR)/2
 	aenv madsr 0.1,0,1,0.2;linenr 1,0.1,0.2, 0.01
 
 	abp butterbp ain, kcutoff, kcutoff/16 ; bring it out
-	afiltered  rezzy abp, kcutoff, 100, 1
+	afiltered  rezzy abp, kcutoff, 99, 1
 
 	afitlered balance afiltered, ain ; for any case
 
 	kpan line 0,p3,1
 	kfilterLevel port chnget:k("filter"), 0.02
 	aL, aR pan2 afiltered*40*aenv*gkLevel*kfilterLevel, kpan ; TODO: port for filter
+	
+	
+		
+	
+	if (rms(aL)>1 || rms(aR)>1) then
+	 turnoff
+	endif
+	
 	if (kcutoff>0) then
+		aL limit aL, - 0.9, 0.9 ; for any case
+		aR limit aL, - 0.9, 0.9
 		outs aL, aR
 	endif
 	
@@ -281,6 +304,7 @@ instr record2 ; record resonantfiltered band from given cutoff frequency
 	
 	anoise  pinkish 0.5
 	abp butterbp anoise, icutoff, icutoff/16 ; bring it out
+	icutoff limit icutoff, 100,18000 ; otherwise rezzy may explode
 	afiltered  rezzy abp, icutoff, 60, 1
 	aenv linen 1,0.01,p3, 0.01
 	;aenv linen 1,random:i(0.1,0.45) *p3, p3, p3*random:i(0.1,0.45) ; ma ei tea, kas teeb mingit vahet...
@@ -315,6 +339,14 @@ instr fadeout
 	chnset kfade, "level"
 endin
 
+instr clear_buffer
+	index = 0
+loophere:
+	tabw_i 0, index, giBuffer
+	loop_lt index,1,ftlen(giBuffer), loophere	
+	
+endin
+
 ;schedule "play_buffer",0,30
 instr play_buffer
 	; TO PLAT ALONE: RANDOM GAIN for filters
@@ -342,12 +374,18 @@ instr play_buffer
 	
 	asig sndwarp 0.5, ktimewarp, kresample,giNormalizedBuffer, ibeg, iwsize, irandw, ioverlap, giWindow, itimemode
 	
+	; TODO: port for lowgain , highgain
 	alowShelf pareq asig, 600,ampdb(chnget:k("lowgain")), 0.2, 1
 	ahighShelf pareq asig, 600,ampdb(chnget:k("highgain")), 0.2, 2 
 	
 	
 	kbufferLevel port chnget:k("buffer"), 0.02
 	aout = (alowShelf+ahighShelf+asig*0.1)*0.5 * gkLevel * aenv * kbufferLevel 
+	
+	kcheck downsamp aout
+	if (kcheck>1) then
+	 turnoff
+	endif
 	 
 	outs aout,aout
 	
@@ -364,6 +402,12 @@ instr sound_out
 	kamp = (gkFilterPlaying==1) ? 0.3 :1
 	kamp port kamp, 0.01, 1
 	;outvalue "level", kamp
+	
+	gaL clip gaL, 0, 0.95 ; not to explode
+	gaL limit gaL, -1, 1
+	gaR clip gaR, 0, 0.95
+	gaR limit gaR,-1,1
+		
 	outs gaL*gkLevel*kamp*gkEndLevel, gaR*gkLevel*kamp*gkEndLevel
 	gaL = 0
 	gaR = 0
@@ -417,13 +461,22 @@ endin
 
 
 
+
+
+
+
+
+
+
+
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
  <x>0</x>
  <y>0</y>
- <width>354</width>
- <height>391</height>
+ <width>358</width>
+ <height>563</height>
  <visible>true</visible>
  <uuid/>
  <bgcolor mode="nobackground">
@@ -433,10 +486,10 @@ endin
  </bgcolor>
  <bsbObject version="2" type="BSBLabel">
   <objectName/>
-  <x>0</x>
+  <x>1</x>
   <y>308</y>
   <width>353</width>
-  <height>83</height>
+  <height>103</height>
   <uuid>{592b40e3-3d5a-4710-958b-e5b9f7744121}</uuid>
   <visible>true</visible>
   <midichan>0</midichan>
@@ -506,7 +559,7 @@ endin
   <image>/</image>
   <eventLine>i "filter" 0 4</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBDisplay">
   <objectName>display</objectName>
@@ -566,7 +619,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>32.000</label>
+  <label>11.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -665,7 +718,7 @@ endin
   <image>/</image>
   <eventLine>i "scheduleBufPlay"  0 319</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBVSlider">
   <objectName>level</objectName>
@@ -679,7 +732,7 @@ endin
   <midicc>0</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.40944882</value>
+  <value>0.19000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -726,7 +779,7 @@ endin
   <midicc>1</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.62204724</value>
+  <value>0.70000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -773,7 +826,7 @@ endin
   <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>3.00000000</maximum>
-  <value>2.52755906</value>
+  <value>0.66000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -820,7 +873,7 @@ endin
   <midicc>6</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>-0.47927521</value>
+  <value>-1.98000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -838,7 +891,7 @@ endin
   <midicc>7</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>2.88734252</value>
+  <value>-3.30000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -960,7 +1013,88 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
+ <bsbObject version="2" type="BSBScope">
+  <objectName/>
+  <x>8</x>
+  <y>413</y>
+  <width>350</width>
+  <height>150</height>
+  <uuid>{48cc1c45-0361-41c6-aa4e-9aca7ca8d930}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <value>-255.00000000</value>
+  <type>scope</type>
+  <zoomx>2.00000000</zoomx>
+  <zoomy>5.00000000</zoomy>
+  <dispx>1.00000000</dispx>
+  <dispy>1.00000000</dispy>
+  <mode>0.00000000</mode>
+ </bsbObject>
+ <bsbObject version="2" type="BSBCheckBox">
+  <objectName>keepTesting</objectName>
+  <x>21</x>
+  <y>378</y>
+  <width>20</width>
+  <height>20</height>
+  <uuid>{47bec7b1-e38c-4a6a-a457-bd86bf1605c1}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <selected>false</selected>
+  <label/>
+  <pressedValue>1</pressedValue>
+  <randomizable group="0">false</randomizable>
+ </bsbObject>
+ <bsbObject version="2" type="BSBLabel">
+  <objectName/>
+  <x>51</x>
+  <y>377</y>
+  <width>124</width>
+  <height>25</height>
+  <uuid>{78a10703-480f-45e1-90b3-992ebb6ebdbb}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <label>Keep testers playing</label>
+  <alignment>left</alignment>
+  <font>Arial</font>
+  <fontsize>10</fontsize>
+  <precision>3</precision>
+  <color>
+   <r>0</r>
+   <g>0</g>
+   <b>0</b>
+  </color>
+  <bgcolor mode="nobackground">
+   <r>255</r>
+   <g>255</g>
+   <b>255</b>
+  </bgcolor>
+  <bordermode>noborder</bordermode>
+  <borderradius>1</borderradius>
+  <borderwidth>1</borderwidth>
+ </bsbObject>
+ <bsbObject version="2" type="BSBButton">
+  <objectName>button25</objectName>
+  <x>228</x>
+  <y>374</y>
+  <width>100</width>
+  <height>30</height>
+  <uuid>{9efc3cfb-4e90-4a1f-a3ca-60df13d5a8ec}</uuid>
+  <visible>true</visible>
+  <midichan>0</midichan>
+  <midicc>0</midicc>
+  <type>event</type>
+  <pressedValue>1.00000000</pressedValue>
+  <stringvalue/>
+  <text>Clear buffer</text>
+  <image>/</image>
+  <eventLine>i "clear_buffer" 0 0</eventLine>
+  <latch>false</latch>
+  <latched>false</latched>
+ </bsbObject>
 </bsbPanel>
 <bsbPresets>
 </bsbPresets>
-<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="true" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
+<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="false" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
