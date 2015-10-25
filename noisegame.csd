@@ -248,7 +248,7 @@ instr filter
 
 	
 	kcutoff port kcutoff,0.02, istartfreq
-	kcutoff limit kcutoff, 50, 14000 ; does it help?	
+	kcutoff limit kcutoff, 50, 13000 ; does it help?	
 	ain = (gaL+gaR)/2
 	aenv madsr 0.1,0,1,0.2;linenr 1,0.1,0.2, 0.01
 
@@ -304,7 +304,7 @@ instr record2 ; record resonantfiltered band from given cutoff frequency
 	
 	anoise  pinkish 0.5
 	abp butterbp anoise, icutoff, icutoff/16 ; bring it out
-	icutoff limit icutoff, 100,18000 ; otherwise rezzy may explode
+	icutoff limit icutoff, 100,13000 ; otherwise rezzy may explode
 	afiltered  rezzy abp, icutoff, 60, 1
 	aenv linen 1,0.01,p3, 0.01
 	;aenv linen 1,random:i(0.1,0.45) *p3, p3, p3*random:i(0.1,0.45) ; ma ei tea, kas teeb mingit vahet...
@@ -619,7 +619,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>11.000</label>
+  <label>77.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -699,7 +699,7 @@ endin
   <image>/</image>
   <eventLine>i "start_tester" 0 0 5</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
  <bsbObject version="2" type="BSBButton">
   <objectName>button8</objectName>
@@ -826,7 +826,7 @@ endin
   <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>3.00000000</maximum>
-  <value>0.66000000</value>
+  <value>2.52000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -873,7 +873,7 @@ endin
   <midicc>6</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>-1.98000000</value>
+  <value>-0.22000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -891,7 +891,7 @@ endin
   <midicc>7</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>-3.30000000</value>
+  <value>-4.84000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
@@ -1041,7 +1041,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <selected>false</selected>
+  <selected>true</selected>
   <label/>
   <pressedValue>1</pressedValue>
   <randomizable group="0">false</randomizable>
