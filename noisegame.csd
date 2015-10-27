@@ -11,7 +11,7 @@ nchnls = 2
 0dbfs = 1
 ksmps = 4
 
-seed 0
+seed 0	
 
 ; MACROS:
 #define COUNT4LONG #10#
@@ -470,6 +470,7 @@ endin
 
 
 
+
 <bsbPanel>
  <label>Widgets</label>
  <objectName/>
@@ -484,7 +485,7 @@ endin
   <g>255</g>
   <b>255</b>
  </bgcolor>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>1</x>
   <y>308</y>
@@ -513,7 +514,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>250</x>
   <y>13</y>
@@ -542,7 +543,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBButton">
+ <bsbObject type="BSBButton" version="2">
   <objectName>button1</objectName>
   <x>125</x>
   <y>337</y>
@@ -561,7 +562,7 @@ endin
   <latch>false</latch>
   <latched>false</latched>
  </bsbObject>
- <bsbObject version="2" type="BSBDisplay">
+ <bsbObject type="BSBDisplay" version="2">
   <objectName>display</objectName>
   <x>107</x>
   <y>252</y>
@@ -590,7 +591,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBButton">
+ <bsbObject type="BSBButton" version="2">
   <objectName>button3</objectName>
   <x>227</x>
   <y>337</y>
@@ -607,9 +608,9 @@ endin
   <image>/</image>
   <eventLine>i "play_buffer" 0 10</eventLine>
   <latch>false</latch>
-  <latched>true</latched>
+  <latched>false</latched>
  </bsbObject>
- <bsbObject version="2" type="BSBDisplay">
+ <bsbObject type="BSBDisplay" version="2">
   <objectName>counter</objectName>
   <x>107</x>
   <y>212</y>
@@ -619,7 +620,7 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <label>77.000</label>
+  <label>1.000</label>
   <alignment>left</alignment>
   <font>Arial</font>
   <fontsize>10</fontsize>
@@ -638,7 +639,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBCheckBox">
+ <bsbObject type="BSBCheckBox" version="2">
   <objectName>count</objectName>
   <x>320</x>
   <y>212</y>
@@ -648,12 +649,12 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <selected>true</selected>
+  <selected>false</selected>
   <label/>
   <pressedValue>1</pressedValue>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>209</x>
   <y>212</y>
@@ -682,7 +683,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBButton">
+ <bsbObject type="BSBButton" version="2">
   <objectName>channel</objectName>
   <x>19</x>
   <y>337</y>
@@ -701,7 +702,7 @@ endin
   <latch>false</latch>
   <latched>false</latched>
  </bsbObject>
- <bsbObject version="2" type="BSBButton">
+ <bsbObject type="BSBButton" version="2">
   <objectName>button8</objectName>
   <x>208</x>
   <y>246</y>
@@ -716,11 +717,11 @@ endin
   <stringvalue/>
   <text>Start playbuffers</text>
   <image>/</image>
-  <eventLine>i "scheduleBufPlay"  0 319</eventLine>
+  <eventLine>i "scheduleBufPlay"  0 200 </eventLine>
   <latch>false</latch>
   <latched>false</latched>
  </bsbObject>
- <bsbObject version="2" type="BSBVSlider">
+ <bsbObject type="BSBVSlider" version="2">
   <objectName>level</objectName>
   <x>25</x>
   <y>29</y>
@@ -732,13 +733,13 @@ endin
   <midicc>0</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.19000000</value>
+  <value>0.31000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>5</x>
   <y>138</y>
@@ -767,7 +768,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBVSlider">
+ <bsbObject type="BSBVSlider" version="2">
   <objectName>filter</objectName>
   <x>88</x>
   <y>30</y>
@@ -779,13 +780,13 @@ endin
   <midicc>1</midicc>
   <minimum>0.00000000</minimum>
   <maximum>1.00000000</maximum>
-  <value>0.70000000</value>
+  <value>0.64000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>75</x>
   <y>138</y>
@@ -814,7 +815,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBVSlider">
+ <bsbObject type="BSBVSlider" version="2">
   <objectName>buffer</objectName>
   <x>152</x>
   <y>30</y>
@@ -826,13 +827,13 @@ endin
   <midicc>2</midicc>
   <minimum>0.00000000</minimum>
   <maximum>3.00000000</maximum>
-  <value>2.52000000</value>
+  <value>0.75000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>146</x>
   <y>137</y>
@@ -861,7 +862,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBVSlider">
+ <bsbObject type="BSBVSlider" version="2">
   <objectName>lowgain</objectName>
   <x>265</x>
   <y>34</y>
@@ -873,13 +874,13 @@ endin
   <midicc>6</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>-0.22000000</value>
+  <value>-7.04000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBVSlider">
+ <bsbObject type="BSBVSlider" version="2">
   <objectName>highgain</objectName>
   <x>301</x>
   <y>34</y>
@@ -891,13 +892,13 @@ endin
   <midicc>7</midicc>
   <minimum>-11.00000000</minimum>
   <maximum>11.00000000</maximum>
-  <value>-4.84000000</value>
+  <value>2.42000000</value>
   <mode>lin</mode>
   <mouseControl act="jump">continuous</mouseControl>
   <resolution>-1.00000000</resolution>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>258</x>
   <y>139</y>
@@ -926,7 +927,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>299</x>
   <y>139</y>
@@ -955,7 +956,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>1</x>
   <y>212</y>
@@ -984,7 +985,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>1</x>
   <y>252</y>
@@ -1013,7 +1014,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBScope">
+ <bsbObject type="BSBScope" version="2">
   <objectName/>
   <x>8</x>
   <y>413</y>
@@ -1031,7 +1032,7 @@ endin
   <dispy>1.00000000</dispy>
   <mode>0.00000000</mode>
  </bsbObject>
- <bsbObject version="2" type="BSBCheckBox">
+ <bsbObject type="BSBCheckBox" version="2">
   <objectName>keepTesting</objectName>
   <x>21</x>
   <y>378</y>
@@ -1041,12 +1042,12 @@ endin
   <visible>true</visible>
   <midichan>0</midichan>
   <midicc>0</midicc>
-  <selected>true</selected>
+  <selected>false</selected>
   <label/>
   <pressedValue>1</pressedValue>
   <randomizable group="0">false</randomizable>
  </bsbObject>
- <bsbObject version="2" type="BSBLabel">
+ <bsbObject type="BSBLabel" version="2">
   <objectName/>
   <x>51</x>
   <y>377</y>
@@ -1075,7 +1076,7 @@ endin
   <borderradius>1</borderradius>
   <borderwidth>1</borderwidth>
  </bsbObject>
- <bsbObject version="2" type="BSBButton">
+ <bsbObject type="BSBButton" version="2">
   <objectName>button25</objectName>
   <x>228</x>
   <y>374</y>
@@ -1097,4 +1098,4 @@ endin
 </bsbPanel>
 <bsbPresets>
 </bsbPresets>
-<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="false" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
+<EventPanel name="" tempo="60.00000000" loop="8.00000000" x="783" y="492" width="655" height="346" visible="true" loopStart="0" loopEnd="0">i "filter" 0 4 1 0 </EventPanel>
